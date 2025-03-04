@@ -1,0 +1,224 @@
+########################
+# Additional Files
+########################
+# data
+# README.md
+# __pycache__
+
+########################
+# Filled Code
+########################
+# ..\codes\loss.py:1
+        tmp = np.exp(input)
+        tmp = tmp / np.sum(tmp, axis = 1, keepdims = True)
+        tmp = np.sum(np.where(target > 0, target * (np.log(target) - np.log(tmp)), 0), axis = 1)
+        return np.sum(tmp, axis = 0) / input.shape[0]
+
+# ..\codes\loss.py:2
+        tmp = np.exp(input)
+        tmp = tmp / np.sum(tmp, axis = 1, keepdims = True)
+        return (tmp - target) / input.shape[0]
+
+# ..\codes\loss.py:3
+        tmp = np.exp(input)
+        tmp = tmp / np.sum(tmp, axis = 1, keepdims = True)
+        tmp = -np.sum(target * np.log(tmp), axis = 1)
+        return np.sum(tmp, axis = 0) / input.shape[0]
+
+# ..\codes\loss.py:4
+        tmp = np.exp(input)
+        tmp = tmp / np.sum(tmp, axis = 1, keepdims = True)
+        return (tmp - target) / input.shape[0]
+
+# ..\codes\loss.py:5
+        tmp = np.where(target > 0, 0, np.maximum(self.margin + input - np.sum(np.where(target > 0, input, 0), axis = 1, keepdims = True), 0))
+        return np.mean(np.sum(tmp, axis = 1))
+
+# ..\codes\loss.py:6
+        tmp = np.where((self.margin + input - np.sum(np.where(target > 0, input, 0), axis = 1, keepdims = True) > 0) & (target < 1), 1, 0)
+        tmp = np.where(target > 0, -np.sum(tmp, axis = 1, keepdims = True), tmp)
+        return tmp / input.shape[0]
+
+# ..\codes\loss.py:7
+        tmp = np.exp(input)
+        tmp = tmp / np.sum(tmp, axis = 1, keepdims = True)
+        re_alpha = np.array(self.alpha).reshape(1, -1)
+        tmp = -(re_alpha * target + (1 - re_alpha) * (1 - target)) * ((1 - tmp) ** self.gamma) * target * np.log(tmp)
+        return np.mean(np.sum(tmp, axis = 1))
+
+# ..\codes\loss.py:8
+        softmax_output = np.exp(input)
+        softmax_output = softmax_output / np.sum(softmax_output, axis = 1, keepdims = True)
+
+        re_alpha = np.array(self.alpha).reshape(1, -1)
+        grad_output = ((1 - softmax_output) ** self.gamma) / softmax_output - self.gamma * ((1 - softmax_output) ** (self.gamma - 1)) * np.log(softmax_output)
+        grad_output = -(re_alpha * target + (1 - re_alpha) * (1 - target)) * target * grad_output
+
+        grad_input = np.zeros_like(input)
+        for i in range(input.shape[0]):
+            s = softmax_output[i].reshape(-1, 1)
+            jacobian_matrix = np.diagflat(s) - np.dot(s, s.T)
+            grad_input[i] = np.dot(jacobian_matrix, grad_output[i])
+
+        return grad_input / input.shape[0]
+
+# ..\codes\layers.py:1
+        self._saved_for_backward(input)
+        return 1.0507 * np.where(input > 0, input, 1.67326 * (np.exp(input) - 1))
+
+# ..\codes\layers.py:2
+        input = self._saved_tensor
+        return grad_output * 1.0507 * np.where(input > 0, 1, 1.67326 * np.exp(input))
+
+# ..\codes\layers.py:3
+        self._saved_for_backward(input)
+        return np.where(input <= -3, 0, np.where(input >= 3, input * (input + 3) / 6, input))
+
+# ..\codes\layers.py:4
+        input = self._saved_tensor
+        return grad_output * np.where(input <= -3, 0, np.where(input >= 3, (2 * input + 3) / 6, 1))
+
+# ..\codes\layers.py:5
+        self._saved_for_backward(input)
+        return (np.exp(input) - np.exp(-input)) / (np.exp(input) + np.exp(-input))
+
+# ..\codes\layers.py:6
+        input = self._saved_tensor
+        tmp = self.forward(input)
+        return grad_output * (1 - tmp * tmp)
+
+# ..\codes\layers.py:7
+        self._saved_for_backward(input)
+        return np.dot(input, self.W) + self.b
+
+# ..\codes\layers.py:8
+        input = self._saved_tensor
+        self.grad_W = np.dot(input.T, grad_output)
+        self.grad_b = np.sum(grad_output, axis=0)
+        return np.dot(grad_output, self.W.T)
+
+
+########################
+# References
+########################
+
+########################
+# Other Modifications
+########################
+# _codes\loss.py -> ..\codes\loss.py
+# 40 -     def __init__(self, name, margin=5):
+# 46 +     def __init__(self, name, margin=0.5):
+# 46 ?                                     ++
+# _codes\run_mlp.py -> ..\codes\run_mlp.py
+# 3 - from layers import Selu, HardSwish, Linear, Tanh
+# 3 + from layers import Selu, HardSwish, Linear, Tanh, Softmax
+# 3 ?                                                 +++++++++
+# 4 - from loss import KLDivLoss, SoftmaxCrossEntropyLoss, HingeLoss
+# 4 + from loss import KLDivLoss, SoftmaxCrossEntropyLoss, HingeLoss, FocalLoss
+# 4 ?                                                               +++++++++++
+# 7 + import matplotlib.pyplot as plt
+# 14 - model.add(Linear('fc1', 784, 10, 0.01))
+# 14 ?                               ^
+# 15 + model.add(Linear('fc1', 784, 112, 0.01))
+# 15 ?                               ^^
+# 16 + model.add(Tanh('af1'))
+# 17 + model.add(Linear('fc2', 112, 28, 0.01))
+# 18 + model.add(Tanh('af2'))
+# 19 + model.add(Linear('fc3', 28, 10, 0.01))
+# 16 - loss = KLDivLoss(name='loss')
+# 16 ?        ^^^^^
+# 21 + loss = FocalLoss(name='loss')
+# 21 ?        ^^^^^
+# 25 -     'learning_rate': 0.0,
+# 30 +     'learning_rate': 0.03,
+# 30 ?                         +
+# 26 -     'weight_decay': 0.0,
+# 31 +     'weight_decay': 0.0001,
+# 31 ?                        +++
+# 27 -     'momentum': 0.0,
+# 27 ?                   ^
+# 32 +     'momentum': 0.9,
+# 32 ?                   ^
+# 39 + train_loss = []
+# 40 + train_acc = []
+# 41 + test_loss = []
+# 42 + test_acc = []
+# 37 -     train_net(model, loss, config, train_data, train_label, config['batch_size'], config['disp_freq'])
+# 46 +     tmp_train_loss, tmp_train_acc = train_net(model, loss, config, train_data, train_label, config['batch_size'], config['disp_freq'])
+# 46 ?    ++++++++++++++++++++++++++++++++
+# 47 +
+# 48 +     train_loss += tmp_train_loss
+# 49 +     train_acc += tmp_train_acc
+# 41 -         test_net(model, loss, test_data, test_label, config['batch_size'])
+# 53 +         tmp_test_loss, tmp_test_acc = test_net(model, loss, test_data, test_label, config['batch_size'])
+# 53 ?        ++++++++++++++++++++++++++++++
+# 54 +
+# 55 +         test_loss.append(tmp_test_loss)
+# 56 +         test_acc.append(tmp_test_acc)
+# 57 +
+# 58 +
+# 59 + plt.figure()
+# 60 +
+# 61 + plt.subplot(2, 2, 1)
+# 62 + plt.plot(train_loss, label='Loss')
+# 63 + plt.xlabel('Iteration')
+# 64 + plt.ylabel('Loss')
+# 65 + plt.title('Training Loss')
+# 66 + plt.legend()
+# 67 +
+# 68 + plt.subplot(2, 2, 2)
+# 69 + plt.plot(train_acc, label='Accuracy')
+# 70 + plt.xlabel('Iteration')
+# 71 + plt.ylabel('Accuracy')
+# 72 + plt.title('Training Accuracy')
+# 73 + plt.legend()
+# 74 +
+# 75 + plt.subplot(2, 2, 3)
+# 76 + plt.plot(test_loss, label='Loss')
+# 77 + plt.xlabel('Iteration')
+# 78 + plt.ylabel('Loss')
+# 79 + plt.title('Test Loss')
+# 80 + plt.legend()
+# 81 +
+# 82 + plt.subplot(2, 2, 4)
+# 83 + plt.plot(test_acc, label='Accuracy')
+# 84 + plt.xlabel('Iteration')
+# 85 + plt.ylabel('Accuracy')
+# 86 + plt.title('Test Accuracy')
+# 87 + plt.legend()
+# 88 +
+# 89 + plt.show()
+# _codes\layers.py -> ..\codes\layers.py
+# 25 +
+# 74 +
+# 75 + class Softmax(Layer):
+# 76 +     def __init__(self, name):
+# 77 +         super(Softmax, self).__init__(name)
+# 78 +
+# 79 +     def forward(self, input):
+# 80 +         self._saved_for_backward(input)
+# 81 +         tmp = np.exp(input)
+# 82 +         return tmp / np.sum(tmp, axis = 1, keepdims = True)
+# 83 +
+# 84 +     def backward(self, grad_output):
+# 85 +         input = self._saved_tensor
+# 86 +         softmax_output = self.forward(input)
+# 87 +         grad_input = np.zeros_like(input)
+# 88 +
+# 89 +         for i in range(input.shape[0]):
+# 90 +             s = softmax_output[i].reshape(-1, 1)
+# 91 +             jacobian_matrix = np.diagflat(s) - np.dot(s, s.T)
+# 92 +             grad_input[i] = np.dot(jacobian_matrix, grad_output[i])
+# 93 +
+# 94 +         return grad_input
+# _codes\solve_net.py -> ..\codes\solve_net.py
+# 20 +
+# 21 +     loss_graph = []
+# 22 +     acc_graph = []
+# 46 +             loss_graph.append(np.mean(loss_list))
+# 47 +             acc_graph.append(np.mean(acc_list))
+# 51 +
+# 52 +     return loss_graph, acc_graph
+# 69 +
+# 70 +     return np.mean(loss_list), np.mean(acc_list)
+
